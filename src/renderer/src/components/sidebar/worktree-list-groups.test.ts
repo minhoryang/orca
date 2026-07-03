@@ -230,6 +230,30 @@ describe('buildRows with pinned worktrees', () => {
     ])
   })
 
+  it('adds non-local host context labels in ungrouped mode', () => {
+    const rows = buildRows(
+      'none',
+      [worktree, remoteWorktree],
+      new Map([
+        [repo.id, repo],
+        [remoteRepo.id, remoteRepo]
+      ]),
+      null,
+      new Set()
+    )
+
+    expect(rows).toMatchObject([
+      { type: 'header', key: 'all', label: 'All' },
+      { type: 'item', worktree: { id: worktree.id } },
+      { type: 'item', worktree: { id: remoteWorktree.id }, hostContextLabel: 'gpu-vm' }
+    ])
+    const localRow = rows.find((row) => row.type === 'item' && row.worktree.id === worktree.id)
+    expect(localRow?.type).toBe('item')
+    if (localRow?.type === 'item') {
+      expect(localRow.hostContextLabel).toBeUndefined()
+    }
+  })
+
   it('keeps pinned worktrees above the All group', () => {
     const rows = buildRows('none', [unpinned1, pinned, unpinned2], repoMap, null, new Set())
 
@@ -925,6 +949,21 @@ describe('buildRows with pinned worktrees', () => {
         expect(row.hostContextLabel).toBeUndefined()
       }
     }
+  })
+
+  it('adds host context labels for single-host remote project groups', () => {
+    const rows = buildRows(
+      'repo',
+      [remoteWorktree],
+      new Map([[remoteRepo.id, remoteRepo]]),
+      null,
+      new Set()
+    )
+
+    expect(rows).toMatchObject([
+      { type: 'header', key: `repo:${remoteRepo.id}`, label: remoteRepo.displayName, count: 1 },
+      { type: 'item', worktree: { id: remoteWorktree.id }, hostContextLabel: 'gpu-vm' }
+    ])
   })
 
   it('keeps same-named repos separate without project setup identity', () => {

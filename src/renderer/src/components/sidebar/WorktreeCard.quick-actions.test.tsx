@@ -169,6 +169,38 @@ describe('WorktreeCard quick actions', () => {
     expect(markup).toContain('data-worktree-card-meta-row=""')
   })
 
+  it('renders visible repo identity in compact card title chips', () => {
+    settings = { compactWorktreeCards: true }
+
+    const markup = renderToStaticMarkup(
+      <WorktreeCard worktree={makeWorktree()} repo={makeRepo()} isActive={false} />
+    )
+
+    expect(markup).toContain('aria-label="Project orca"')
+    expect(markup).toContain('>orca</span>')
+    expect(markup).toContain(
+      'text-[10px] font-semibold leading-none text-muted-foreground lowercase'
+    )
+    expect(markup).not.toContain('data-worktree-card-meta-row=""')
+  })
+
+  it('renders host context in compact card metadata', () => {
+    settings = { compactWorktreeCards: true }
+
+    const markup = renderToStaticMarkup(
+      <WorktreeCard
+        worktree={makeWorktree()}
+        repo={makeRepo()}
+        isActive={false}
+        hideRepoBadge
+        hostContextLabel="gpu-vm"
+      />
+    )
+
+    expect(markup).toContain('gpu-vm')
+    expect(markup).toContain('data-worktree-card-meta-row=""')
+  })
+
   it('can render the current workspace with a secondary active surface', () => {
     const markup = renderToStaticMarkup(
       <WorktreeCard

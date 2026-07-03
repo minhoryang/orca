@@ -177,23 +177,33 @@ function getDirectoryName(folderPath: string): string {
 // keep the box + tooltip identical so both repo cues read as the same affordance.
 function RepoIdentityChip({
   repo,
+  showLabel = false,
   children
 }: {
   repo: Repo
+  showLabel?: boolean
   children: React.ReactNode
 }): React.JSX.Element {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <span
-          className="inline-flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-worktree-sidebar-border bg-worktree-sidebar-accent/55"
+          className={cn(
+            'inline-flex h-4 shrink-0 items-center justify-center rounded-[4px] border border-worktree-sidebar-border bg-worktree-sidebar-accent/55',
+            showLabel ? 'max-w-[7rem] gap-1 px-1' : 'size-4'
+          )}
           aria-label={translate(
             'auto.components.sidebar.WorktreeCard.35ccfe2475',
             'Project {{value0}}',
             { value0: repo.displayName }
           )}
         >
-          {children}
+          <span className="flex size-3 shrink-0 items-center justify-center">{children}</span>
+          {showLabel && (
+            <span className="min-w-0 truncate text-[10px] font-semibold leading-none text-muted-foreground lowercase">
+              {repo.displayName}
+            </span>
+          )}
         </span>
       </TooltipTrigger>
       <TooltipContent side="right" sideOffset={8}>
@@ -1180,7 +1190,7 @@ const WorktreeCard = React.memo(function WorktreeCard({
     showRepoIdentityInTitle && !!repo && !hideRepoBadge && !isFolder && !showPinnedRepoIcon
   const showRepoBadgeInMetaRow =
     !showRepoIdentityInTitle && !!repo && !hideRepoBadge && !showPinnedRepoIcon
-  const showHostContextBadge = !compactCards && !!hostContextLabel
+  const showHostContextBadge = !!hostContextLabel
   const showDetachedHeadInMetaRow = !compactCards && !isFolder && detachedHeadDisplay !== null
   const showBranch =
     !isFolder &&
@@ -1214,7 +1224,7 @@ const WorktreeCard = React.memo(function WorktreeCard({
     showMetaRowDetails
   )
   const hasMetaRow = compactCards
-    ? hasMetadataBadge || cacheStartedAt != null
+    ? showHostContextBadge || hasMetadataBadge || cacheStartedAt != null
     : hasDetailedMetaRowContent
   const showHeaderActions = showTitleRowPrimary || showDeleteQuickAction
   // Why: the hover owns full identity when the row truncates; normalize once
@@ -1473,7 +1483,7 @@ const WorktreeCard = React.memo(function WorktreeCard({
               )}
 
             {showInlineRepoBadge && (
-              <RepoIdentityChip repo={repo}>
+              <RepoIdentityChip repo={repo} showLabel>
                 <RepoIconGlyph
                   repoIcon={repo.repoIcon}
                   color={resolveRepoHeaderColor(repo.badgeColor)}
