@@ -165,23 +165,33 @@ function getDirectoryName(folderPath: string): string {
 // keep the box + tooltip identical so both repo cues read as the same affordance.
 function RepoIdentityChip({
   repo,
+  showLabel = false,
   children
 }: {
   repo: Repo
+  showLabel?: boolean
   children: React.ReactNode
 }): React.JSX.Element {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <span
-          className="inline-flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-worktree-sidebar-border bg-worktree-sidebar-accent/55"
+          className={cn(
+            'inline-flex h-4 shrink-0 items-center justify-center rounded-[4px] border border-worktree-sidebar-border bg-worktree-sidebar-accent/55',
+            showLabel ? 'max-w-[7rem] gap-1 px-1' : 'size-4'
+          )}
           aria-label={translate(
             'auto.components.sidebar.WorktreeCard.35ccfe2475',
             'Project {{value0}}',
             { value0: repo.displayName }
           )}
         >
-          {children}
+          <span className="flex size-3 shrink-0 items-center justify-center">{children}</span>
+          {showLabel && (
+            <span className="min-w-0 truncate text-[10px] font-semibold leading-none text-muted-foreground lowercase">
+              {repo.displayName}
+            </span>
+          )}
         </span>
       </TooltipTrigger>
       <TooltipContent side="right" sideOffset={8}>
@@ -1164,11 +1174,21 @@ const WorktreeCard = React.memo(function WorktreeCard({
   // Why: the new card style retired the Compact/Detailed layout switch; repo
   // identity uses the same compact chip as pinned cards instead of a lower pill.
   const showRepoIdentityInTitle = newCardStyle || compactCards
+  // Why: identity badges are card properties; the project badge is still
+  // suppressed while grouping by project (hideRepoBadge) to avoid duplicating
+  // the group header. Host badge only renders for non-local hosts.
+  const showProjectName = cardProps.includes('project-name')
+  const showHostName = cardProps.includes('host-name')
   const showInlineRepoBadge =
-    showRepoIdentityInTitle && !!repo && !hideRepoBadge && !isFolder && !showPinnedRepoIcon
+    showProjectName &&
+    showRepoIdentityInTitle &&
+    !!repo &&
+    !hideRepoBadge &&
+    !isFolder &&
+    !showPinnedRepoIcon
   const showRepoBadgeInMetaRow =
-    !showRepoIdentityInTitle && !!repo && !hideRepoBadge && !showPinnedRepoIcon
-  const showHostContextBadge = !compactCards && !!hostContextLabel
+    showProjectName && !showRepoIdentityInTitle && !!repo && !hideRepoBadge && !showPinnedRepoIcon
+  const showHostContextBadge = showHostName && !!hostContextLabel
   const showDetachedHeadInMetaRow = !compactCards && !isFolder && detachedHeadDisplay !== null
   const showBranch =
     !isFolder &&
@@ -1192,7 +1212,6 @@ const WorktreeCard = React.memo(function WorktreeCard({
   // metadata lane unless branch or detached-head identity has content.
   const hasDetailedMetaRowContent = Boolean(
     (showRepoBadgeInMetaRow && repo) ||
-    showHostContextBadge ||
     folderMetaRowContent ||
     showBranch ||
     showIdentityInNewCard ||
@@ -1461,7 +1480,7 @@ const WorktreeCard = React.memo(function WorktreeCard({
               )}
 
             {showInlineRepoBadge && (
-              <RepoIdentityChip repo={repo}>
+              <RepoIdentityChip repo={repo} showLabel>
                 <RepoIconGlyph
                   repoIcon={repo.repoIcon}
                   color={resolveRepoHeaderColor(repo.badgeColor)}
@@ -1540,6 +1559,17 @@ const WorktreeCard = React.memo(function WorktreeCard({
                   )}
                 </TooltipContent>
               </Tooltip>
+            )}
+
+            {/* Host badge sits beside the primary badge so the workspace's
+                execution host reads as part of its identity. */}
+            {showHostContextBadge && (
+              <Badge
+                variant="secondary"
+                className="h-[16px] max-w-[7rem] shrink-0 rounded border border-border bg-accent px-1.5 text-[10px] font-medium leading-none text-muted-foreground dark:bg-accent/80 dark:border-border/50"
+              >
+                <span className="truncate">{hostContextLabel}</span>
+              </Badge>
             )}
 
             {worktree.isSparse && (
@@ -1640,15 +1670,6 @@ const WorktreeCard = React.memo(function WorktreeCard({
                     {repo.displayName}
                   </span>
                 </div>
-              )}
-
-              {showHostContextBadge && (
-                <Badge
-                  variant="secondary"
-                  className="h-[16px] max-w-[7rem] shrink-0 rounded border border-border bg-accent px-1.5 text-[10px] font-medium leading-none text-muted-foreground dark:bg-accent/80 dark:border-border/50"
-                >
-                  <span className="truncate">{hostContextLabel}</span>
-                </Badge>
               )}
 
               {showIdentityInNewCard ? (

@@ -5727,7 +5727,10 @@ describe('Store', () => {
       worktreeMeta: {},
       settings: { compactWorktreeCards: false },
       ui: {
-        worktreeCardProperties: ['status', 'unread', 'ci', 'issue', 'pr', 'comment']
+        worktreeCardProperties: ['status', 'unread', 'ci', 'issue', 'pr', 'comment'],
+        // Isolate this case to the split-out expansion; the identity migration
+        // is covered separately below.
+        _identityWorktreeCardPropertiesDefaulted: true
       },
       githubCache: { pr: {}, issue: {} },
       workspaceSession: {}
@@ -5763,7 +5766,8 @@ describe('Store', () => {
           'pr',
           'comment',
           'inline-agents'
-        ]
+        ],
+        _identityWorktreeCardPropertiesDefaulted: true
       },
       githubCache: { pr: {}, issue: {} },
       workspaceSession: {}
@@ -5806,6 +5810,8 @@ describe('Store', () => {
       'automation',
       'comment',
       'ports',
+      'project-name',
+      'host-name',
       'inline-agents'
     ])
     expect(store.getUI().worktreeCardProperties).not.toContain('branch')
@@ -5820,7 +5826,8 @@ describe('Store', () => {
       settings: { compactWorktreeCards: false },
       ui: {
         worktreeCardProperties: ['status', 'unread', 'ci', 'issue', 'pr'],
-        _worktreeCardModeDefaulted: true
+        _worktreeCardModeDefaulted: true,
+        _identityWorktreeCardPropertiesDefaulted: true
       },
       githubCache: { pr: {}, issue: {} },
       workspaceSession: {}
@@ -5849,7 +5856,8 @@ describe('Store', () => {
       ui: {
         worktreeCardProperties: ['status', 'pr'],
         _inlineAgentsDefaultedForAllUsers: true,
-        _expandedWorktreeCardPropertiesDefaulted: true
+        _expandedWorktreeCardPropertiesDefaulted: true,
+        _identityWorktreeCardPropertiesDefaulted: true
       },
       githubCache: { pr: {}, issue: {} },
       workspaceSession: {}
@@ -5908,7 +5916,8 @@ describe('Store', () => {
           'ports'
         ],
         _inlineAgentsDefaultedForAllUsers: true,
-        _expandedWorktreeCardPropertiesDefaulted: true
+        _expandedWorktreeCardPropertiesDefaulted: true,
+        _identityWorktreeCardPropertiesDefaulted: true
       },
       githubCache: { pr: {}, issue: {} },
       workspaceSession: {}
@@ -5927,6 +5936,50 @@ describe('Store', () => {
     ])
     expect(store.getUI().worktreeCardProperties).not.toContain('branch')
     expect(store.getUI().worktreeCardProperties).not.toContain('inline-agents')
+  })
+
+  it('defaults the identity card properties on for existing profiles', async () => {
+    writeDataFile({
+      schemaVersion: 1,
+      repos: [],
+      worktreeMeta: {},
+      settings: { compactWorktreeCards: false },
+      ui: {
+        // A profile that predates the identity properties: earlier migrations
+        // ran, but the identity one has not.
+        worktreeCardProperties: ['status', 'unread', 'pr'],
+        _inlineAgentsDefaultedForAllUsers: true,
+        _expandedWorktreeCardPropertiesDefaulted: true
+      },
+      githubCache: { pr: {}, issue: {} },
+      workspaceSession: {}
+    })
+    const store = await createStore()
+
+    expect(store.getUI().worktreeCardProperties).toContain('project-name')
+    expect(store.getUI().worktreeCardProperties).toContain('host-name')
+    expect(store.getUI()._identityWorktreeCardPropertiesDefaulted).toBe(true)
+  })
+
+  it('does not re-add identity card properties after a deliberate opt-out', async () => {
+    writeDataFile({
+      schemaVersion: 1,
+      repos: [],
+      worktreeMeta: {},
+      settings: { compactWorktreeCards: false },
+      ui: {
+        worktreeCardProperties: ['status', 'unread', 'pr'],
+        _inlineAgentsDefaultedForAllUsers: true,
+        _expandedWorktreeCardPropertiesDefaulted: true,
+        _identityWorktreeCardPropertiesDefaulted: true
+      },
+      githubCache: { pr: {}, issue: {} },
+      workspaceSession: {}
+    })
+    const store = await createStore()
+
+    expect(store.getUI().worktreeCardProperties).not.toContain('project-name')
+    expect(store.getUI().worktreeCardProperties).not.toContain('host-name')
   })
 
   it('uses the compact preset when card properties are missing in compact mode', async () => {
